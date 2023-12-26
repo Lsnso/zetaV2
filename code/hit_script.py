@@ -1,15 +1,14 @@
 from lib import *
 
 def hit_script(pv, dv, count):
-    player, dealer, deck = Hand(), Hand(), Deck()
-    game = Game([player, pv], [dealer, dv], [deck, count])
+    player, dealer, deck, decision = Hand(), Hand(), Deck(), "S"
+    game = Game([player, pv], [dealer, dv], [deck, count], decision)
     
-    game.do_player()
-    game.do_dealer()
+    if dv == "A":
+        game.peak()
+    while game.on:
+        game.do_player()
+        game.do_dealer()
+    game.update_result()
 
-    print(game.player.cards)
-    print(game.player.value)
-    print(game.dealer.cards)
-    print(game.dealer.value)
-
-hit_script("20", "2", 0)
+hit_script("20", "A", 0)

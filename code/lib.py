@@ -76,7 +76,7 @@ class Hand():
                 self.value += 1
 
 class Game():
-    def __init__(self, player_info, dealer_info, deck_info):
+    def __init__(self, player_info, dealer_info, deck_info, decision):
         #info arguments in the form [instance of respective class, value]
         combinations = {
             #combinations are merely a visual add on while debugging. these must not have impact in the result
@@ -119,6 +119,7 @@ class Game():
             "18" : [["K", "8"], ["Q", "8"], ["J", "8"], ["T", "8"]],
             "19" : [["K", "9"], ["Q", "9"], ["J", "9"], ["T", "9"]],
             "20" : [["T", "T"], ["Q", "Q"], ["J", "J"], ["K", "K"]],
+            "21" : [["A", "K"], ["A", "Q"], ["A", "J"], ["A", "T"]]
             }
 
         #init player
@@ -128,16 +129,45 @@ class Game():
         for card in to_player:
             self.player.add_card(card)
 
-        #init dealer
-        self.dealer = dealer_info[0]
-        self.dealer.add_card(dealer_info[1])
-
         #init deck
         self.deck = deck_info[0]
         self.deck.force_count(deck_info[1])
 
+        #init dealer, draws second card based on deck state. doesnt influence its count
+        self.dealer = dealer_info[0]
+        self.dealer.add_card(dealer_info[1])
+        self.dealer.add_card(random.choice(self.deck.cards))
+
         #init game status
+        self.decision = decision
         self.on = True
+
+    def peak(self):
+        if self.dealer.value == 21 and len(self.dealer.cards) == 2:
+            self.on = False
+
+    def update_result(self):
+        #dealer has blackjack, either draw player blackjack or player loses
+        if self.dealer.value == 21 and len(self.dealer.cards) == 2:
+            if self.player.value == 21 and len(self.player.value) == 2:
+                self.result = 0
+            else:
+                self.result = -1
+        #player busts
+        elif self.player.value > 21:
+            self.result = -1
+        #dealer busts
+        elif self.dealer.value > 21:
+            self.result = 1
+        #dealer > player
+        elif self.dealer.value > self.player.value:
+            self.result = - 1
+        #player > dealer
+        elif self.player.value > self.dealer.value:
+            self.result = 1
+        #player = value
+        elif self.player.value == self.dealer.value:
+            self.result = 0
 
     def read_decision(self):
         #opens deck count table file and returns a decision
@@ -152,7 +182,6 @@ class Game():
 
     def do_player(self):
         #border checkpoint. papers, please
-        self.read_decision()
         if self.decision == "H":
             self.hit()
         elif self.decision == "S":
@@ -166,6 +195,7 @@ class Game():
         #draws card, checks if player busted, else fetch another decision
         self.player.add_card(self.deck.draw_card())
         if self.player.value < 21:
+            self.read_decision()
             self.do_player()
         else:
             self.on = False
@@ -180,5 +210,6 @@ class Game():
         self.on = False
 
     def do_dealer(self):
+        #draws cards till dealer hits 17 or higher
         while self.dealer.value < 17:
             self.dealer.add_card(self.deck.draw_card())
